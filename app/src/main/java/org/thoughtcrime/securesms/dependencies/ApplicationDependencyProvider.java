@@ -103,6 +103,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import im.molly.unifiedpush.helper.UnifiedPushHelper;
+
 /**
  * Implementation of {@link AppDependencies.Provider} that provides real app dependencies.
  */
