@@ -2,6 +2,7 @@ package org.thoughtcrime.securesms.components.settings.app.notifications
 
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -21,85 +22,91 @@ import org.unifiedpush.android.connector.UnifiedPush
 
 class NotificationsSettingsViewModel(private val sharedPreferences: SharedPreferences) : ViewModel() {
 
-  init {
-    if (NotificationChannels.supported()) {
-      SignalStore.settings().messageNotificationSound = NotificationChannels.getInstance().messageRingtone
-      SignalStore.settings().isMessageVibrateEnabled = NotificationChannels.getInstance().messageVibrate
-    }
-  }
-
   private val store = Store(getState())
 
   val state: LiveData<NotificationsSettingsState> = store.stateLiveData
   private val EXECUTOR = SerialMonoLifoExecutor(SignalExecutors.UNBOUNDED)
 
+  init {
+    if (NotificationChannels.supported()) {
+      SignalStore.settings().messageNotificationSound = NotificationChannels.getInstance().messageRingtone
+      SignalStore.settings().isMessageVibrateEnabled = NotificationChannels.getInstance().messageVibrate
+    }
+
+    store.update { getState(calculateSlowNotifications = true) }
+  }
+
+  fun refresh() {
+    store.update { getState(currentState = it) }
+  }
+
   fun setMessageNotificationsEnabled(enabled: Boolean) {
     SignalStore.settings().isMessageNotificationsEnabled = enabled
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationsSound(sound: Uri?) {
     val messageSound = sound ?: Uri.EMPTY
     SignalStore.settings().messageNotificationSound = messageSound
     NotificationChannels.getInstance().updateMessageRingtone(messageSound)
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationVibration(enabled: Boolean) {
     SignalStore.settings().isMessageVibrateEnabled = enabled
     NotificationChannels.getInstance().updateMessageVibrate(enabled)
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationLedColor(color: String) {
     SignalStore.settings().messageLedColor = color
     NotificationChannels.getInstance().updateMessagesLedColor(color)
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationLedBlink(blink: String) {
     SignalStore.settings().messageLedBlinkPattern = blink
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationInChatSoundsEnabled(enabled: Boolean) {
     SignalStore.settings().isMessageNotificationsInChatSoundsEnabled = enabled
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageRepeatAlerts(repeats: Int) {
     SignalStore.settings().messageNotificationsRepeatAlerts = repeats
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationPrivacy(preference: String) {
     SignalStore.settings().messageNotificationsPrivacy = NotificationPrivacyPreference(preference)
-    store.update { getState() }
+    refresh()
   }
 
   fun setMessageNotificationPriority(priority: Int) {
     sharedPreferences.edit().putString(TextSecurePreferences.NOTIFICATION_PRIORITY_PREF, priority.toString()).apply()
-    store.update { getState() }
+    refresh()
   }
 
   fun setCallNotificationsEnabled(enabled: Boolean) {
     SignalStore.settings().isCallNotificationsEnabled = enabled
-    store.update { getState() }
+    refresh()
   }
 
   fun setCallRingtone(ringtone: Uri?) {
     SignalStore.settings().callRingtone = ringtone ?: Uri.EMPTY
-    store.update { getState() }
+    refresh()
   }
 
   fun setCallVibrateEnabled(enabled: Boolean) {
     SignalStore.settings().isCallVibrateEnabled = enabled
-    store.update { getState() }
+    refresh()
   }
 
   fun setNotifyWhenContactJoinsSignal(enabled: Boolean) {
     SignalStore.settings().isNotifyWhenContactJoinsSignal = enabled
-    store.update { getState() }
+    refresh()
   }
 
   fun setNotificationDeliveryMethod(method: NotificationDeliveryMethod) {
@@ -122,13 +129,19 @@ class NotificationsSettingsViewModel(private val sharedPreferences: SharedPrefer
       SignalStore.unifiedpush().airGaped = false
       SignalStore.unifiedpush().mollySocketUrl = null
     }
-    store.update { getState() }
+    refresh()
   }
 
-  private fun getState(): NotificationsSettingsState = NotificationsSettingsState(
+  /**
+   * @param currentState If provided and [calculateSlowNotifications] = false, then we will copy the slow notification state from it
+   * @param calculateSlowNotifications If true, calculate the true slow notification state (this is not main-thread safe). Otherwise, it will copy from
+   * [currentState] or default to false.
+   */
+  private fun getState(currentState: NotificationsSettingsState? = null, calculateSlowNotifications: Boolean = false): NotificationsSettingsState = NotificationsSettingsState(
     isLinkedDevice = SignalStore.account().isLinkedDevice,
     messageNotificationsState = MessageNotificationsState(
-      notificationsEnabled = SignalStore.settings().isMessageNotificationsEnabled,
+      notificationsEnabled = SignalStore.settings().isMessageNotificationsEnabled && canEnableNotifications(),
+      canEnableNotifications = canEnableNotifications(),
       sound = SignalStore.settings().messageNotificationSound,
       vibrateEnabled = SignalStore.settings().isMessageVibrateEnabled,
       ledColor = SignalStore.settings().messageLedColor,
@@ -139,13 +152,24 @@ class NotificationsSettingsViewModel(private val sharedPreferences: SharedPrefer
       priority = TextSecurePreferences.getNotificationPriority(ApplicationDependencies.getApplication()),
     ),
     callNotificationsState = CallNotificationsState(
-      notificationsEnabled = SignalStore.settings().isCallNotificationsEnabled,
+      notificationsEnabled = SignalStore.settings().isCallNotificationsEnabled && canEnableNotifications(),
+      canEnableNotifications = canEnableNotifications(),
       ringtone = SignalStore.settings().callRingtone,
       vibrateEnabled = SignalStore.settings().isCallVibrateEnabled
     ),
     notifyWhenContactJoinsSignal = SignalStore.settings().isNotifyWhenContactJoinsSignal,
     notificationDeliveryMethod = SignalStore.settings().notificationDeliveryMethod
   )
+
+  private fun canEnableNotifications(): Boolean {
+    val areNotificationsDisabledBySystem = Build.VERSION.SDK_INT >= 26 && (
+      !NotificationChannels.getInstance().isMessageChannelEnabled ||
+        !NotificationChannels.getInstance().isMessagesChannelGroupEnabled ||
+        !NotificationChannels.getInstance().areNotificationsEnabled()
+      )
+
+    return !areNotificationsDisabledBySystem
+  }
 
   class Factory(private val sharedPreferences: SharedPreferences) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

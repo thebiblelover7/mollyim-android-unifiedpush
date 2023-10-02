@@ -369,7 +369,8 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
 
     SignalExecutors.UNBOUNDED.execute(() -> {
       Log.blockUntilAllWritesFinished();
-      LogDatabase.getInstance(this).trimToSize();
+      LogDatabase.getInstance(this).logs().trimToSize();
+      LogDatabase.getInstance(this).crashes().trimToSize();
     });
   }
 
