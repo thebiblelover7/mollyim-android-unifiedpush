@@ -116,7 +116,7 @@ class NotificationsSettingsViewModel(private val sharedPreferences: SharedPrefer
     val context = ApplicationContext.getInstance()
     if (method == NotificationDeliveryMethod.UNIFIEDPUSH) {
       UnifiedPush.getDistributors(context).getOrNull(0)?.let {
-        store.update { getState() }
+        refresh()
         EXECUTOR.enqueue {
           UnifiedPush.saveDistributor(context, it)
           UnifiedPush.registerApp(context)
