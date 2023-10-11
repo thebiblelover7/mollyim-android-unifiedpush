@@ -138,9 +138,6 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
 
   private static final String TAG = Log.tag(ApplicationContext.class);
 
-  @VisibleForTesting
-  protected PersistentLogger persistentLogger;
-
   private static ApplicationContext instance;
 
   public ApplicationContext() {
@@ -330,10 +327,6 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
     }, TimeUnit.SECONDS.toMillis(1));
   }
 
-  public PersistentLogger getPersistentLogger() {
-    return persistentLogger;
-  }
-
   public void checkBuildExpiration() {
     if (Util.getTimeUntilBuildExpiry() <= 0 && !SignalStore.misc().isClientDeprecated()) {
       Log.w(TAG, "Build expired!");
@@ -360,9 +353,8 @@ public class ApplicationContext extends MultiDexApplication implements AppForegr
 
   @VisibleForTesting
   protected void initializeLogging() {
-    persistentLogger = new PersistentLogger(this);
     Log.setInternalCheck(FeatureFlags::internalUser);
-    Log.setPersistentLogger(persistentLogger);
+    Log.setPersistentLogger(new PersistentLogger(this));
     Log.setLogging(TextSecurePreferences.isLogEnabled(this));
 
     SignalProtocolLoggerProvider.setProvider(new CustomSignalProtocolLogger());
