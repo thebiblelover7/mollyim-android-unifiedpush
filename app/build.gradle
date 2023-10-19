@@ -46,7 +46,7 @@ ext {
 
 def canonicalVersionCode = 1341
 def canonicalVersionName = "6.35.3"
-def mollyRevision = 0
+def mollyRevision = 1
 
 def postFixSize = 100
 
