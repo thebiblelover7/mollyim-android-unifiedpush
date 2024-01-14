@@ -32,6 +32,8 @@ import org.thoughtcrime.securesms.util.DynamicTheme;
 import org.thoughtcrime.securesms.util.SplashScreenUtil;
 import org.thoughtcrime.securesms.util.WindowUtil;
 
+import static im.molly.unifiedpush.util.UnifiedPushHelper.registerAppWithDialogIfNeeded;
+
 public class MainActivity extends PassphraseRequiredActivity implements VoiceNoteMediaControllerOwner {
 
   public static final int RESULT_CONFIG_CHANGED = Activity.RESULT_FIRST_USER + 901;
@@ -90,6 +92,8 @@ public class MainActivity extends PassphraseRequiredActivity implements VoiceNot
 
     conversationListTabsViewModel = new ViewModelProvider(this, factory).get(ConversationListTabsViewModel.class);
     updateTabVisibility();
+
+    registerAppWithDialogIfNeeded(this);
   }
 
   @Override
