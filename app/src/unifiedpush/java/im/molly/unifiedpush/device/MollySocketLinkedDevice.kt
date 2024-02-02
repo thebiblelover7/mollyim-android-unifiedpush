@@ -95,7 +95,7 @@ class MollySocketLinkedDevice(val context: Context) {
       unidentifiedAccessKey = null,
       unrestrictedUnidentifiedAccess = true,
       capabilities = AppCapabilities.getCapabilities(true),
-      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy().phoneNumberListingMode.isDiscoverable,
+      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy().isDiscoverableByPhoneNumber,
       name = Base64.encodeWithPadding(encryptedDeviceName),
       pniRegistrationId = SignalStore.account().pniRegistrationId,
       recoveryPassword = null
