@@ -9,6 +9,7 @@ import org.thoughtcrime.securesms.AppCapabilities
 import org.thoughtcrime.securesms.database.loaders.DeviceListLoader
 import org.thoughtcrime.securesms.dependencies.ApplicationDependencies
 import org.thoughtcrime.securesms.devicelist.Device
+import org.thoughtcrime.securesms.keyvalue.PhoneNumberPrivacyValues.PhoneNumberDiscoverabilityMode
 import org.thoughtcrime.securesms.keyvalue.SignalStore
 import org.thoughtcrime.securesms.push.AccountManagerFactory
 import org.thoughtcrime.securesms.registration.RegistrationRepository
@@ -95,7 +96,7 @@ class MollySocketLinkedDevice(val context: Context) {
       unidentifiedAccessKey = null,
       unrestrictedUnidentifiedAccess = true,
       capabilities = AppCapabilities.getCapabilities(true),
-      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy().isDiscoverableByPhoneNumber,
+      discoverableByPhoneNumber = SignalStore.phoneNumberPrivacy().phoneNumberDiscoverabilityMode == PhoneNumberDiscoverabilityMode.DISCOVERABLE,
       name = Base64.encodeWithPadding(encryptedDeviceName),
       pniRegistrationId = SignalStore.account().pniRegistrationId,
       recoveryPassword = null
